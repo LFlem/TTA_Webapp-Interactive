@@ -88,19 +88,6 @@ const DESTINATIONS = [
   },
 ];
 
-/* Personnalité de l'agent (sert de "system" à l'IA du chatbot) */
-const BOT_SYSTEM = `Tu es l'assistant virtuel de TimeTravel Agency, une agence de voyage temporel de luxe (fictive).
-Ton rôle : conseiller les clients sur les meilleures destinations temporelles.
-
-Ton ton : professionnel mais chaleureux, passionné d'histoire, enthousiaste sans être familier. Tu réponds en français, de façon concise (2 à 5 phrases), en t'adaptant à la question.
-
-Destinations proposées et tarifs (fictifs mais à respecter) :
-- Paris 1889 — Belle Époque, Tour Eiffel, Exposition Universelle. 12 400 € / 5 jours. Idéal pour les amateurs d'élégance, d'architecture et d'histoire moderne.
-- Crétacé -65M — dinosaures, nature préhistorique. 28 900 € / 3 jours. Pour aventuriers, amoureux de nature sauvage. Destination premium et encadrée.
-- Florence 1504 — Renaissance, art, Michel-Ange, Léonard de Vinci. 15 200 € / 6 jours. Pour les passionnés d'art et de culture.
-
-Tu peux suggérer une destination selon les intérêts du client, répondre aux questions de prix, de sécurité, de durée, et aux FAQ classiques d'une agence de voyage. Si une question sort du cadre, ramène avec tact vers les voyages temporels.`;
-
 /* -------------------- HOOKS -------------------- */
 
 function useReveal() {
@@ -730,13 +717,10 @@ function Chatbot({ open, setOpen }) {
     setLoading(true);
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: BOT_SYSTEM,
           messages: history.map((m) => ({
             role: m.role === "user" ? "user" : "assistant",
             content: m.text,
@@ -744,11 +728,8 @@ function Chatbot({ open, setOpen }) {
         }),
       });
       const data = await res.json();
-      const reply = (data.content || [])
-        .filter((b) => b.type === "text")
-        .map((b) => b.text)
-        .join("\n")
-        .trim();
+      if (!res.ok) throw new Error(data.error || "Erreur API");
+      const reply = (data.reply || "").trim();
       setMessages((m) => [
         ...m,
         { role: "assistant", text: reply || "Pardonnez-moi, je n'ai pas pu formuler de réponse. Reformulez votre question ?" },
